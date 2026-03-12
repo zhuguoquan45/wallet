@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package wallet;
+
+option go_package = "github.com/zgq/wallet/gen/wallet";
+
+service WalletService {
+  rpc CreateWallet(CreateWalletRequest) returns (CreateWalletResponse);
+  rpc GetWallet(GetWalletRequest) returns (GetWalletResponse);
+  rpc Transfer(TransferRequest) returns (TransferResponse);
+}
+
+message CreateWalletRequest {}
+
+message CreateWalletResponse {
+  string id = 1;
+  int64 balance = 2;
+}
+
+message GetWalletRequest {
+  string id = 1;
+}
+
+message GetWalletResponse {
+  string id = 1;
+  int64 balance = 2;
+}
+
+message TransferRequest {
+  string from_id = 1;
+  string to_id = 2;
+  int64 amount = 3;
+}
+
+message TransferResponse {}
