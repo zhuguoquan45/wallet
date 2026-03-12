@@ -1,0 +1,173 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Wallet Service",
+    "version": "1.0.0"
+  },
+  "servers": [
+    { "url": "http://localhost:8080" }
+  ],
+  "paths": {
+    "/wallets": {
+      "post": {
+        "summary": "创建钱包",
+        "operationId": "createWallet",
+        "responses": {
+          "201": {
+            "description": "创建成功",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Wallet" },
+                "example": { "id": "550e8400-e29b-41d4-a716-446655440000", "balance": 0 }
+              }
+            }
+          },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/wallets/{wallet_id}": {
+      "get": {
+        "summary": "查询钱包",
+        "operationId": "getWallet",
+        "parameters": [
+          {
+            "name": "wallet_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "查询成功",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Wallet" },
+                "example": { "id": "550e8400-e29b-41d4-a716-446655440000", "balance": 1000 }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/wallets/{wallet_id}/deposit": {
+      "post": {
+        "summary": "充值",
+        "operationId": "deposit",
+        "parameters": [
+          {
+            "name": "wallet_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["amount"],
+                "properties": {
+                  "amount": { "type": "integer", "minimum": 1, "description": "充值金额（分）" }
+                }
+              },
+              "example": { "amount": 1000 }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "充值成功，返回最新钱包信息",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Wallet" },
+                "example": { "id": "550e8400-e29b-41d4-a716-446655440000", "balance": 1000 }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "422": { "$ref": "#/components/responses/UnprocessableEntity" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    },
+    "/wallets/transfer": {
+      "post": {
+        "summary": "转账",
+        "operationId": "transfer",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/TransferRequest" },
+              "example": {
+                "from_id": "550e8400-e29b-41d4-a716-446655440000",
+                "to_id": "660e8400-e29b-41d4-a716-446655440001",
+                "amount": 500
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": { "description": "转账成功" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "422": { "$ref": "#/components/responses/UnprocessableEntity" },
+          "500": { "$ref": "#/components/responses/InternalError" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Wallet": {
+        "type": "object",
+        "properties": {
+          "id":      { "type": "string", "description": "钱包 ID" },
+          "balance": { "type": "integer", "description": "余额（分）" }
+        }
+      },
+      "TransferRequest": {
+        "type": "object",
+        "required": ["from_id", "to_id", "amount"],
+        "properties": {
+          "from_id": { "type": "string", "description": "转出钱包 ID" },
+          "to_id":   { "type": "string", "description": "转入钱包 ID" },
+          "amount":  { "type": "integer", "minimum": 1, "description": "转账金额（分）" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "请求体格式错误",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      },
+      "NotFound": {
+        "description": "钱包不存在",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      },
+      "UnprocessableEntity": {
+        "description": "业务校验失败（余额不足 / 金额非法 / 相同钱包）",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      },
+      "InternalError": {
+        "description": "服务器内部错误",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      }
+    }
+  }
+}
