@@ -2,6 +2,7 @@ package rest
 
 import (
 	"errors"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -94,6 +95,7 @@ func (h *Handler) transfer(c *gin.Context) {
 			errors.Is(err, domain.ErrSameWallet):
 			c.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
 		default:
+			log.Println("transfer error:", err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
 		return

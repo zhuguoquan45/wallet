@@ -1,4 +1,4 @@
-.PHONY: run proto tidy docker-build test
+.PHONY: run proto tidy docker-build docker-up test loadtest
 
 run:
 	go run ./cmd/server
@@ -19,3 +19,6 @@ docker-up:
 
 test:
 	go test ./... -v -race
+
+loadtest:
+	go run ./loadtest -addr=$(ADDR) -workers=$(WORKERS) -duration=$(DURATION)
