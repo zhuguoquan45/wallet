@@ -123,21 +123,27 @@ func (r *pgRepo) Transfer(ctx context.Context, fromID, toID string, amount int64
 	}
 	defer tx.Rollback() //nolint:errcheck
 
-	var fromBal int64
-	if err := tx.QueryRowContext(ctx, `SELECT balance FROM wallets WHERE id = $1 FOR UPDATE`, fromID).Scan(&fromBal); err != nil {
-		if err == sql.ErrNoRows {
-			return domain.ErrNotFound
-		}
-		return err
+	// Always lock in lexicographic order to prevent deadlocks when two
+	// concurrent transactions transfer between the same pair of wallets in
+	// opposite directions.
+	first, second := fromID, toID
+	if first > second {
+		first, second = second, first
 	}
-	var toBal int64
-	if err := tx.QueryRowContext(ctx, `SELECT balance FROM wallets WHERE id = $1 FOR UPDATE`, toID).Scan(&toBal); err != nil {
-		if err == sql.ErrNoRows {
-			return domain.ErrNotFound
+
+	balances := make(map[string]int64, 2)
+	for _, id := range []string{first, second} {
+		var bal int64
+		if err := tx.QueryRowContext(ctx, `SELECT balance FROM wallets WHERE id = $1 FOR UPDATE`, id).Scan(&bal); err != nil {
+			if err == sql.ErrNoRows {
+				return domain.ErrNotFound
+			}
+			return err
 		}
-		return err
+		balances[id] = bal
 	}
-	if fromBal < amount {
+
+	if balances[fromID] < amount {
 		return domain.ErrInsufficientFunds
 	}
 
